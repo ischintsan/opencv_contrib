@@ -80,7 +80,7 @@ WeChatQRCode::WeChatQRCode(const String& detector_prototxt_path,
     }
 }
 
-vector<string> WeChatQRCode::detectAndDecode(InputArray img, OutputArrayOfArrays points) {
+vector<string> WeChatQRCode::detectAndDecode(InputArray img, OutputArrayOfArrays candidate_points, OutputArrayOfArrays result_points) {
     CV_Assert(!img.empty());
     CV_CheckDepthEQ(img.depth(), CV_8U, "");
 
@@ -95,19 +95,29 @@ vector<string> WeChatQRCode::detectAndDecode(InputArray img, OutputArrayOfArrays
     } else {
         input_img = img.getMat();
     }
-    auto candidate_points = p->detect(input_img);
+    auto c_pts = p->detect(input_img);
     auto res_points = vector<Mat>();
-    auto ret = p->decode(input_img, candidate_points, res_points);
+    auto ret = p->decode(input_img, c_pts, res_points);
     // opencv type convert
-    vector<Mat> tmp_points;
-    if (points.needed()) {
+    if (candidate_points.needed()) {
+        vector<Mat> tmp_points;
+        for (size_t i = 0; i < c_pts.size(); i++) {
+            Mat tmp_point;
+            tmp_points.push_back(tmp_point);
+            c_pts[i].convertTo(((OutputArray)tmp_points[i]), CV_32FC2);
+        }
+        candidate_points.createSameSize(tmp_points, CV_32FC2);
+        candidate_points.assign(tmp_points);
+    }
+    if (result_points.needed()) {
+        vector<Mat> tmp_points;
         for (size_t i = 0; i < res_points.size(); i++) {
             Mat tmp_point;
             tmp_points.push_back(tmp_point);
             res_points[i].convertTo(((OutputArray)tmp_points[i]), CV_32FC2);
         }
-        points.createSameSize(tmp_points, CV_32FC2);
-        points.assign(tmp_points);
+        result_points.createSameSize(tmp_points, CV_32FC2);
+        result_points.assign(tmp_points);
     }
     return ret;
 }

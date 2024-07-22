@@ -48,7 +48,9 @@ public:
      * empty if not found.
      * @return list of decoded string.
      */
-    CV_WRAP std::vector<std::string> detectAndDecode(InputArray img, OutputArrayOfArrays points = noArray());
+    CV_WRAP std::vector<std::string> detectAndDecode(InputArray img,
+                                                     OutputArrayOfArrays candidate_points = noArray(),
+                                                     OutputArrayOfArrays result_points = noArray());
 
     /**
     * @brief set scale factor

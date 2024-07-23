@@ -34,33 +34,33 @@ QRCodeReader::QRCodeReader() : decoder_() {
     smoothMaxMultiple_ = 40;
 }
 
-vector<Ref<Result>> QRCodeReader::decode(Ref<BinaryBitmap> image) { return decode(image, DecodeHints()); }
+Ref<Result> QRCodeReader::decode(Ref<BinaryBitmap> image) { return decode(image, DecodeHints()); }
 
-vector<Ref<Result>> QRCodeReader::decode(Ref<BinaryBitmap> image, DecodeHints hints) {
+Ref<Result> QRCodeReader::decode(Ref<BinaryBitmap> image, DecodeHints hints) {
     // Binarize image using the Histogram Binarized method and be binarized
     ErrorHandler err_handler;
-    vector<Ref<Result>> result_list;
     Ref<BitMatrix> imageBitMatrix = image->getBlackMatrix(err_handler);
-    if (err_handler.ErrCode() || imageBitMatrix == NULL) return result_list;
+    if (err_handler.ErrCode() || imageBitMatrix == NULL) return Ref<Result>();
 
-    vector<Ref<Result>> rst = decodeMore(image, imageBitMatrix, hints, err_handler);
-    if (err_handler.ErrCode() || rst.empty()) {
+    Ref<Result> rst = decodeMore(image, imageBitMatrix, hints, err_handler);
+    if (err_handler.ErrCode() || rst == NULL) {
         // black white mirro!!!
         Ref<BitMatrix> invertedMatrix = image->getInvertedMatrix(err_handler);
-        if (err_handler.ErrCode() || invertedMatrix == NULL) return result_list;
-        vector<Ref<Result>> tmp_rst = decodeMore(image, invertedMatrix, hints, err_handler);
-        if (err_handler.ErrCode() || tmp_rst.empty()) return tmp_rst;
+        if (err_handler.ErrCode() || invertedMatrix == NULL) return Ref<Result>();
+        Ref<Result> tmp_rst = decodeMore(image, invertedMatrix, hints, err_handler);
+        if (err_handler.ErrCode() || tmp_rst == NULL) return Ref<Result>();
+        return tmp_rst;
     }
 
     return rst;
 }
 
-vector<Ref<Result>> QRCodeReader::decodeMore(Ref<BinaryBitmap> image, Ref<BitMatrix> imageBitMatrix,
+Ref<Result> QRCodeReader::decodeMore(Ref<BinaryBitmap> image, Ref<BitMatrix> imageBitMatrix,
                                      DecodeHints hints, ErrorHandler &err_handler) {
     nowHints_ = hints;
     std::string ept;
-    vector<Ref<Result>> result_list;
-    if (imageBitMatrix == NULL) return result_list;
+
+    if (imageBitMatrix == NULL) return Ref<Result>();
     image->m_poUnicomBlock->Init();
     image->m_poUnicomBlock->Reset(imageBitMatrix);
 
@@ -88,7 +88,7 @@ vector<Ref<Result>> QRCodeReader::decodeMore(Ref<BinaryBitmap> image, Ref<BitMat
             Ref<FinderPatternInfo> patternInfo = detector->getFinderPatternInfo(i);
             setPatternFix(patternInfo->getPossibleFix());
             if (patternInfo->getAnglePossibleFix() < 0.6 && i) continue;
-            bool patternFoundFlag = false;
+
             int possibleAlignmentCount = 0;
             possibleAlignmentCount = detector->getPossibleAlignmentCount(i);
             if (possibleAlignmentCount < 0) continue;
@@ -99,7 +99,6 @@ vector<Ref<Result>> QRCodeReader::decodeMore(Ref<BinaryBitmap> image, Ref<BitMat
 
             vector<bool> needTryVariousDeimensions(possibleAlignmentCount, false);
             for (int j = 0; j < possibleAlignmentCount; j++) {
-                if (patternFoundFlag){break;}
                 ArrayRef<Ref<ResultPoint> > points;
                 err_handler.Reset();
                 Ref<DetectorResult> detectorResult =
@@ -143,15 +142,11 @@ vector<Ref<Result>> QRCodeReader::decodeMore(Ref<BinaryBitmap> image, Ref<BitMat
                                decoderResult->getCharset(), decoderResult->getQRCodeVersion(),
                                decoderResult->getEcLevel(), decoderResult->getCharsetMode()));
                 setSuccFix(points);
-                result_list.push_back(result);
-                patternFoundFlag = true;
-                if (nowHints_.getUseNNDetector()) {
-                    return result_list;
-                }
+
+                return result;
             }
             // try different dimentions
             for (int j = 0; j < possibleAlignmentCount; j++) {
-                if (patternFoundFlag){break;}
                 err_handler.Reset();
                 ArrayRef<Ref<ResultPoint> > points;
                 if (needTryVariousDeimensions[j]) {
@@ -193,17 +188,13 @@ vector<Ref<Result>> QRCodeReader::decodeMore(Ref<BinaryBitmap> image, Ref<BitMat
                             decoderResult->getEcLevel(), decoderResult->getCharsetMode()));
 
                         setSuccFix(points);
-                        result_list.push_back(result);
-                        patternFoundFlag = true;
-                        if (nowHints_.getUseNNDetector()) {
-                            return result_list;
-                        }
+                        return result;
                     }
                 }
             }
         }
     }
-    return result_list;
+    return Ref<Result>();
 }
 
 vector<int> QRCodeReader::getPossibleDimentions(int detectDimension) {

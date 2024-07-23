@@ -75,10 +75,10 @@ public:
     virtual ~QRCodeReader();
     string name() override { return "qrcode"; }
 
-    vector<Ref<Result>> decode(Ref<BinaryBitmap> image) override;
-    vector<Ref<Result>> decode(Ref<BinaryBitmap> image, DecodeHints hints) override;
+    Ref<Result> decode(Ref<BinaryBitmap> image) override;
+    Ref<Result> decode(Ref<BinaryBitmap> image, DecodeHints hints) override;
 
-    vector<Ref<Result>> decodeMore(Ref<BinaryBitmap> image, Ref<BitMatrix> imageBitMatrix,
+    Ref<Result> decodeMore(Ref<BinaryBitmap> image, Ref<BitMatrix> imageBitMatrix,
                            DecodeHints hints, ErrorHandler& err_handler);
 
 private:

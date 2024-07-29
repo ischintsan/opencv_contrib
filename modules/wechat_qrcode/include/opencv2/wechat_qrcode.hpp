@@ -51,6 +51,8 @@ public:
     CV_WRAP std::vector<std::string> detectAndDecode(InputArray img,
                                                      OutputArrayOfArrays candidate_points = noArray(),
                                                      OutputArrayOfArrays result_points = noArray());
+    CV_WRAP std::vector<std::string> decode(InputArray img,
+                                            const std::vector<Rect>& candidate_boxes);
 
 protected:
     class Impl;

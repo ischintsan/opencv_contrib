@@ -121,6 +121,40 @@ vector<string> WeChatQRCode::detectAndDecode(InputArray img,  OutputArrayOfArray
     return ret;
 };
 
+vector<string> WeChatQRCode::decode(InputArray img,  const vector<Rect>& candidate_boxes) {
+    CV_Assert(!img.empty());
+    CV_CheckDepthEQ(img.depth(), CV_8U, "");
+
+    if (img.cols() <= 20 || img.rows() <= 20) {
+        return vector<string>();  // image data is not enough for providing reliable results
+    }
+    Mat input_img;
+    int incn = img.channels();
+    CV_Check(incn, incn == 1 || incn == 3 || incn == 4, "");
+    if (incn == 3 || incn == 4) {
+        cvtColor(img, input_img, COLOR_BGR2GRAY);
+    } else {
+        input_img = img.getMat();
+    }
+    auto res_points = vector<Mat>();
+    auto c_pts = vector<Mat>();
+    c_pts.reserve(candidate_boxes.size());
+    for(const auto& rect : candidate_boxes) {
+        auto point = Mat(4, 2, CV_32FC1);
+        point.at<float>(0, 0) = rect.tl().x;
+        point.at<float>(0, 1) = rect.tl().y;
+        point.at<float>(1, 0) = rect.br().x;
+        point.at<float>(1, 1) = rect.tl().y;
+        point.at<float>(2, 0) = rect.br().x;
+        point.at<float>(2, 1) = rect.br().y;
+        point.at<float>(3, 0) = rect.tl().x;
+        point.at<float>(3, 1) = rect.br().y;
+        c_pts.push_back(point);
+    }
+    auto ret = p->decode(input_img, c_pts, res_points);
+    return ret;
+};
+
 vector<string> WeChatQRCode::Impl::decode(const Mat& img, vector<Mat>& candidate_points,
                                           vector<Mat>& points) {
     if (candidate_points.size() == 0) {

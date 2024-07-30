@@ -151,6 +151,7 @@ vector<string> WeChatQRCode::decode(InputArray img,  const vector<Rect>& candida
         point.at<float>(3, 1) = rect.br().y;
         c_pts.push_back(point);
     }
+    p->use_nn_detector_ = true;
     auto ret = p->decode(input_img, c_pts, res_points);
     return ret;
 };
@@ -171,7 +172,8 @@ vector<string> WeChatQRCode::Impl::decode(const Mat& img, vector<Mat>& candidate
         }
         // scale_list contains different scale ratios
         auto scale_list = getScaleList(cropped_img.cols, cropped_img.rows);
-        for (auto cur_scale : scale_list) {
+        for (auto it = scale_list.begin(); it != scale_list.end(); ++it) {
+            const auto& cur_scale = *it;
             Mat scaled_img =
                 super_resolution_model_->processImageScale(cropped_img, cur_scale, use_nn_sr_);
             string result;
@@ -182,6 +184,10 @@ vector<string> WeChatQRCode::Impl::decode(const Mat& img, vector<Mat>& candidate
                 decode_results.push_back(result);
                 points.push_back(point);
                 break;
+            }
+            if(it == scale_list.end() - 1){
+                decode_results.push_back("");
+                points.push_back(Mat());
             }
         }
     }
